@@ -20,7 +20,7 @@ class APNSNotImplementedMethod(Exception):
         self.value = value
     def __str__(self):
         return repr(self.value)
-        
+
 class APNSNoSSLContextFound(Exception):
     """
     This exception raised when you haven't available SSL context
@@ -70,7 +70,7 @@ class APNSCertificateNotFoundError(Exception):
         self.value = value
     def __str__(self):
         return repr(self.value)
-        
+
 class APNSValueError(Exception):
     """
     This exception raised when you try to add value to method
@@ -80,7 +80,7 @@ class APNSValueError(Exception):
         self.value = value
     def __str__(self):
         return repr(self.value)
-    
+
 class APNSUndefinedDeviceToken(Exception):
     """
     This exception raised when you try to send notifications by wrapper
@@ -90,8 +90,8 @@ class APNSUndefinedDeviceToken(Exception):
         self.value = value
     def __str__(self):
         return repr(self.value)
-    
-    
+
+
 class APNSConnectionError(Exception):
     """
     This is a simple exception which generated when
@@ -102,4 +102,3 @@ class APNSConnectionError(Exception):
         self.value = value
     def __str__(self):
         return repr(self.value)
-        

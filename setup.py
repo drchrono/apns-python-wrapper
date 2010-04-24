@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 setup(
     name = "APNSWrapper",
-    version = "0.4",
+    version = "0.5",
     packages = find_packages('.'),
     classifiers = ["Intended Audience :: Customer Service", "Topic :: Internet" ],
     # Project uses reStructuredText, so ensure that the docutils get
@@ -19,9 +19,9 @@ setup(
     license = "ALv2",
     keywords = "apns push notification service wrapper apple",
     url = "http://code.google.com/p/apns-python-wrapper/",
-	long_description = """
-		The Wrapper support for Alerts, Badges, Sounds and Custom arguments.		
-		Feedback Service wrapper support for iterations through feedback tuples.
-	
-	"""
+        long_description = """
+                The Wrapper support for Alerts, Badges, Sounds and Custom arguments.
+                Feedback Service wrapper support for iterations through feedback tuples.
+
+        """
 )

@@ -1,3 +1,9 @@
+Version 0.5 / Apr, 24, 2010
+------------------------------
+ * Fixed Issue 5 dependency of ssl module (it generate an import exception if no ssl module installed)
+ * Fixed Issue 3 a grammar mistake in code (APNSValueERror instead of APNSValueError)
+
+
 Version 0.4 / Nov, 17, 2009
 ------------------------------
  * Removed dependency from ssl module. Now module support for openssl command line 
