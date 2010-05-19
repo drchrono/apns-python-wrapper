@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 setup(
     name = "APNSWrapper",
-    version = "0.5",
+    version = "0.6",
     packages = find_packages('.'),
     classifiers = ["Intended Audience :: Customer Service", "Topic :: Internet" ],
     # Project uses reStructuredText, so ensure that the docutils get

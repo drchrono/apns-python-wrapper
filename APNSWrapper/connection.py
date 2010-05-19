@@ -112,7 +112,7 @@ class SSLModuleConnection(APNSConnectionContext):
     connectionContext = None
     ssl_module = None
 
-    def __init__(self, certificate = None, module = None):
+    def __init__(self, certificate = None, ssl_module = None):
         self.socket = None
         self.connectionContext = None
         self.certificate = certificate
@@ -193,7 +193,7 @@ class APNSConnection(APNSConnectionContext):
 
             # use ssl library to handle secure connection
             import ssl as ssl_module
-            self.connectionContext = SSLModuleConnection(certificate, ssl_module)
+            self.connectionContext = SSLModuleConnection(certificate, ssl_module = ssl_module)
         except:
             # use command line openssl tool to handle secure connection
             if not disable_executable_search:
