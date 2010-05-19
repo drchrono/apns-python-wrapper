@@ -1,3 +1,8 @@
+Version 0.6 / May, 19, 2010
+------------------------------
+ * Fixed Issue 6 - wrong ssl module reference inside of SSLModuleConnection class
+
+
 Version 0.5 / Apr, 24, 2010
 ------------------------------
  * Fixed Issue 5 dependency of ssl module (it generate an import exception if no ssl module installed)
