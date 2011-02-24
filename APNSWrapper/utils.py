@@ -1,4 +1,4 @@
-# Copyright 2009 Max Klymyshyn, Sonettic
+# Copyright 2009-2011 Max Klymyshyn, Sonettic
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,18 +13,24 @@
 import os
 import sys
 
+
 def _doublequote(str):
     """
     Replace double quotes if it's necessary
     """
     return str.replace('"', '\\"')
 
+
 def if_else(condition, a, b):
     """
     It's helper for lambda functions.
     """
-    if condition: return a
-    else: return b
+
+    if condition:
+        return a
+
+    return b
+
 
 def find_executable(executable, path=None):
     """Try to find 'executable' in the directories listed in 'path' (a
