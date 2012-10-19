@@ -127,6 +127,11 @@ class OpenSSLCommandLine(APNSConnectionContext):
     def close(self):
         pass
 
+global_passphrase = ""
+def get_passphrase():
+    x = open(global_passphrase, 'r').readline().strip()
+    print x
+    return x
 
 class M2CryptoModuleConnection(APNSConnectionContext):
     """
@@ -145,6 +150,7 @@ class M2CryptoModuleConnection(APNSConnectionContext):
         self.connectionContext = None
         self.certificate = certificate
         self.ssl_module = ssl_module
+        global_passphrase = passphrase
         self.passphrase = passphrase
 
     def context(self):
@@ -158,19 +164,13 @@ class M2CryptoModuleConnection(APNSConnectionContext):
         ctx = self.ssl_module.Context('sslv3')
         if self.passphrase:
             ctx.load_cert(certfile=self.certificate,
-                            callback=self.get_passphrase)
+                            callback=get_passphrase)
         else:
             ctx.load_cert(certfile=self.certificate)
 
         self.connectionContext = self.ssl_module.Connection(ctx, sock=self.socket)
 
-
         return self
-
-    def get_passphrase(self):
-        x = open(self.passphrase, 'r').readline().strip()
-        print x
-        return x
 
     def certificate(self, path):
         self.certificate = path
