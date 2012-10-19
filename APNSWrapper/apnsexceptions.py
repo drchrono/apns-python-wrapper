@@ -13,7 +13,8 @@
 __all__ = ('APNSNotImplementedMethod', 'APNSNoSSLContextFound', \
            'APNSNoCommandFound', 'APNSTypeError', 'APNSPayloadLengthError', \
            'APNSCertificateNotFoundError', 'APNSValueError', \
-           'APNSUndefinedDeviceToken', 'APNSConnectionError')
+           'APNSUndefinedDeviceToken', 'APNSConnectionError', \
+           'APNSPassphraseNotFoundError')
 
 
 class APNSNotImplementedMethod(Exception):

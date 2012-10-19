@@ -178,7 +178,7 @@ class SSLModuleConnection(APNSConnectionContext):
         """
         Make connection to the host and port.
         """
-
+        print self.connectionContext
         self.connectionContext.write(data)
 
     def connect(self, host, port):
@@ -220,7 +220,7 @@ class APNSConnection(APNSConnectionContext):
         if passphrase:
             if not os.path.exists(str(passphrase)):
                 raise APNSPassphraseNotFoundError("Apple Push Notification "\
-                    "Service Passphrase file %s not found." % str(passphrase))
+                    "Service passphrase file %s not found." % str(passphrase))
 
         try:
             if force_ssl_command:
