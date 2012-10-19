@@ -161,7 +161,7 @@ class SSLModuleConnection(APNSConnectionContext):
                         certfile=self.certificate)
 
         if self.passphrase:
-            self.connectionContext = self.connectionContext.load_cert_chain(certfile=self.certificate,
+            self.connectionContext.context.load_cert_chain(certfile=self.certificate,
                                                     password=open(self.passphrase, 'r').readLine().trim())
 
         return self
