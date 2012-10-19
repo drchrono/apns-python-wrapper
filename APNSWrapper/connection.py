@@ -56,23 +56,32 @@ class OpenSSLCommandLine(APNSConnectionContext):
     port = None
     executable = None
     debug = False
+    passphrase = None
 
-    def __init__(self, certificate=None, executable=None, debug=False):
+    def __init__(self, certificate=None, executable=None, debug=False, passphrase=None):
         self.certificate = certificate
         self.executable = executable
         self.debug = debug
+        self.passphrase = passphrase
 
     def connect(self, host, port):
         self.host = host
         self.port = port
 
     def _command(self):
+        if passphrase:
+            pass_text = "-pass file:%(passphrase)s" % {'passphrase': passphrase}
+        else:
+            pass_text = ""
+
         command = "%(executable)s s_client -ssl3 -cert "\
-                    "%(cert)s -connect %(host)s:%(port)s" % {
+                    "%(cert)s -connect %(host)s:%(port)s"\
+                    " %(passphrase)s" % {
             'executable': self.executable,
             'cert': self.certificate,
             'host': self.host,
             'port': self.port,
+            'passphrase': pass_text,
             }
 
         return subprocess.Popen(command.split(' '), \
@@ -129,12 +138,14 @@ class SSLModuleConnection(APNSConnectionContext):
     certificate = None
     connectionContext = None
     ssl_module = None
+    passphrase = None
 
-    def __init__(self, certificate=None, ssl_module=None):
+    def __init__(self, certificate=None, ssl_module=None, passphrase=None):
         self.socket = None
         self.connectionContext = None
         self.certificate = certificate
         self.ssl_module = ssl_module
+        self.passphrase = passphrase
 
     def context(self):
         """
@@ -144,15 +155,28 @@ class SSLModuleConnection(APNSConnectionContext):
             return self
 
         self.socket = socket.socket()
-        self.connectionContext = self.ssl_module.wrap_socket(\
-                    self.socket,
-                    ssl_version=self.ssl_module.PROTOCOL_SSLv3,
-                    certfile=self.certificate)
+        if self.passphrase:
+            self.connectionContext = self.ssl_module.
+                                    load_cert_chain(certfile=self.certificate,
+                                                    password=open(passphrase, 'r').readLine().trim()
+                                    ).wrap_socket(\
+                                        self.socket,
+                                        ssl_version=self.ssl_module.PROTOCOL_SSLv3,
+                                        certfile=self.certificate)
+        else:
+            self.connectionContext = self.ssl_module.wrap_socket(\
+                        self.socket,
+                        ssl_version=self.ssl_module.PROTOCOL_SSLv3,
+                        certfile=self.certificate)
 
         return self
 
     def certificate(self, path):
         self.certificate = path
+        return self
+
+    def passphrase(self, path):
+        self.passphrase = path
         return self
 
     def read(self, blockSize=1024):
@@ -218,7 +242,8 @@ class APNSConnection(APNSConnectionContext):
             # use ssl library to handle secure connection
             import ssl as ssl_module
             self.connectionContext = SSLModuleConnection(certificate, \
-                                        ssl_module=ssl_module)
+                                        ssl_module=ssl_module, \
+                                        passphrase=passphrase)
         except:
             # use command line openssl tool to handle secure connection
             if not disable_executable_search:
@@ -231,9 +256,11 @@ class APNSConnection(APNSConnectionContext):
                                 "your PATH environment" % str(ssl_command))
 
             self.connectionContext = OpenSSLCommandLine(certificate, \
-                                                    executable, debug=debug)
+                                                    executable, debug=debug, \
+                                                    passphrase=passphrase)
 
         self.certificate = str(certificate)
+        self.passphrase = str(passphrase)
 
     def connect(self, host, port):
         """
