@@ -155,7 +155,7 @@ class M2CryptoModuleConnection(APNSConnectionContext):
             return self
 
         self.socket = socket.socket()
-        ctx = ssl_module.Context('sslv3')
+        ctx = self.ssl_module.Context('sslv3')
         if self.passphrase:
             ctx.load_cert(certchainfile=self.certificate,
                             callback=self.get_passphrase)
