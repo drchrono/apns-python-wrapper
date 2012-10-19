@@ -165,11 +165,12 @@ class M2CryptoModuleConnection(APNSConnectionContext):
         ctx = self.ssl_module.Context('sslv3')
         if self.passphrase:
             print get_passphrase
+            get_passphrase()
             print "still kicking"
-            ctx.load_cert(certfile=self.certificate,
+            ctx.load_cert(self.certificate,
                             callback=get_passphrase)
         else:
-            ctx.load_cert(certfile=self.certificate)
+            ctx.load_cert(self.certificate)
 
         self.connectionContext = self.ssl_module.Connection(ctx, sock=self.socket)
 
