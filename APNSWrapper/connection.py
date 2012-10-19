@@ -129,6 +129,7 @@ class OpenSSLCommandLine(APNSConnectionContext):
 
 global_passphrase = ""
 def get_passphrase():
+    print "test"
     x = open(global_passphrase, 'r').readline().strip()
     print x
     return x
