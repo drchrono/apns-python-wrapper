@@ -315,7 +315,7 @@ class APNSConnection(APNSConnectionContext):
 
             import sys
             if sys.version_info < (3,2): #use M2Crypto if we dont have python 3.2 or newer
-                from M2Crypto import SSl as ssl_module
+                from M2Crypto import SSL as ssl_module
                 self.connectionContext = M2CryptoModuleConnection(certificate, \
                                                             ssl_module=ssl_module, \
                                                             passphrase=passphrase)
