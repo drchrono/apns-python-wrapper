@@ -69,7 +69,7 @@ class OpenSSLCommandLine(APNSConnectionContext):
         self.port = port
 
     def _command(self):
-        if passphrase:
+        if self.passphrase:
             pass_text = "-pass file:%(passphrase)s" % {'passphrase': self.passphrase}
         else:
             pass_text = ""
