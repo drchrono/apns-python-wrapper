@@ -159,11 +159,12 @@ class APNSNotificationWrapper(object):
     debug_ssl = False
 
     def __init__(self, certificate=None, sandbox=True, debug_ssl=False, \
-                    force_ssl_command=False):
+                    force_ssl_command=False, passphrase=None):
         self.debug_ssl = debug_ssl
         self.connection = APNSConnection(certificate=certificate, \
                             force_ssl_command=force_ssl_command, \
-                            debug=self.debug_ssl)
+                            debug=self.debug_ssl, \
+                            passphrase=passphrase)
         self.sandbox = sandbox
         self.payloads = []
 

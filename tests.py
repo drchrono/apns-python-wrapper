@@ -14,7 +14,7 @@ def badge(wrapper, token):
     message.tokenBase64(token)
 
     message.badge(3)
-    print message._build()
+    print message.build()
     wrapper.append(message)
 
 def sound(wrapper, token):
@@ -22,7 +22,7 @@ def sound(wrapper, token):
     message.tokenBase64(token)
 
     message.sound("default")
-    print message._build()
+    print message.build()
     wrapper.append(message)
 
 
@@ -44,12 +44,13 @@ def alert(wrapper, token):
     property = APNSProperty("acme", (1, "custom string argument"))
     message.appendProperty(property)
 
-    print message._build()
+    print message.build()
     wrapper.append(message)
 
 
 def testAPNSWrapper():
-    cert_path = 'iphone_cert.pem'
+    cert_path = 'com.onpatient.phr.pem'
+    pass_path = 'passphrase.txt'
 
     """
     Method to testing apns-wrapper module.
@@ -58,7 +59,8 @@ def testAPNSWrapper():
     encoded_token = '0/w68oJxIYlFpDDC/4eeo/bpt/44JTzZ6ZEXEgVvU6c='
 
     wrapper = APNSNotificationWrapper(cert_path, \
-                sandbox = True, force_ssl_command = False)
+                sandbox = True, force_ssl_command = True, \
+                passphrase = pass_path)
 
     badge(wrapper, encoded_token)
 

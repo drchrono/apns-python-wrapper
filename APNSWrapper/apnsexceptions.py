@@ -13,7 +13,8 @@
 __all__ = ('APNSNotImplementedMethod', 'APNSNoSSLContextFound', \
            'APNSNoCommandFound', 'APNSTypeError', 'APNSPayloadLengthError', \
            'APNSCertificateNotFoundError', 'APNSValueError', \
-           'APNSUndefinedDeviceToken', 'APNSConnectionError')
+           'APNSUndefinedDeviceToken', 'APNSConnectionError', \
+           'APNSPassphraseNotFoundError')
 
 
 class APNSNotImplementedMethod(Exception):
@@ -77,6 +78,17 @@ class APNSPayloadLengthError(Exception):
 
 
 class APNSCertificateNotFoundError(Exception):
+    """
+    This exception raised when you try to add an argument with
+    certificate file but certificate not found.
+    """
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+class APNSPassphraseNotFoundError(Exception):
     """
     This exception raised when you try to add an argument with
     certificate file but certificate not found.

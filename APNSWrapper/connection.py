@@ -196,13 +196,19 @@ class APNSConnection(APNSConnectionContext):
                         ssl_command="openssl",
                         force_ssl_command=False,
                         disable_executable_search=False,
-                        debug=False):
+                        debug=False,
+                        passphrase=None):
         self.connectionContext = None
         self.debug = debug
 
         if not os.path.exists(str(certificate)):
             raise APNSCertificateNotFoundError("Apple Push Notification "\
                 "Service Certificate file %s not found." % str(certificate))
+
+        if passphrase:
+            if not os.path.exists(str(passphrase)):
+                raise APNSPassphraseNotFoundError("Apple Push Notification "\
+                    "Service passphrase file %s not found." % str(passphrase))
 
         try:
             if force_ssl_command:
@@ -238,6 +244,10 @@ class APNSConnection(APNSConnectionContext):
 
     def certificate(self, path):
         self.context().certificate(path)
+        return self
+
+    def passphrase(self, path):
+        self.context().passphrase(path)
         return self
 
     def write(self, data=None):
