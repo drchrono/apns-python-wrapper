@@ -25,9 +25,11 @@ __all__ = ('APNSConnectionContext', 'OpenSSLCommandLine', \
 class APNSConnectionContext(object):
     """Abstract class to implement SSL secured connection factory object"""
     certificate = None
+    passphrase = None
 
-    def __init__(self, certificate=None):
+    def __init__(self, certificate=None, passphrase=None):
         self.certificate = certificate
+        self.passphrase = passphrase
 
     def connect(self, host, port):
         raise APNSNotImplementedMethod("APNSConnectionContext.connect ssl "\
@@ -56,23 +58,31 @@ class OpenSSLCommandLine(APNSConnectionContext):
     port = None
     executable = None
     debug = False
+    passphrase = None
 
-    def __init__(self, certificate=None, executable=None, debug=False):
+    def __init__(self, certificate=None, executable=None, debug=False, passphrase=None):
         self.certificate = certificate
         self.executable = executable
         self.debug = debug
+        self.passphrase = passphrase
 
     def connect(self, host, port):
         self.host = host
         self.port = port
 
     def _command(self):
+        if self.passphrase:
+            passphrase_command = "-pass file:%(passphrase)s" % {'passphrase': self.passphrase}
+        else:
+            passphrase_command = ""
         command = "%(executable)s s_client -ssl3 -cert "\
-                    "%(cert)s -connect %(host)s:%(port)s" % {
+                    "%(cert)s -connect %(host)s:%(port)s "\
+                    "%(passphrase_command)s" % {
             'executable': self.executable,
             'cert': self.certificate,
             'host': self.host,
             'port': self.port,
+            'passphrase_command': passphrase_command,
             }
 
         return subprocess.Popen(command.split(' '), \
@@ -129,12 +139,14 @@ class SSLModuleConnection(APNSConnectionContext):
     certificate = None
     connectionContext = None
     ssl_module = None
+    passphrase = None
 
-    def __init__(self, certificate=None, ssl_module=None):
+    def __init__(self, certificate=None, ssl_module=None, passphrase=None):
         self.socket = None
         self.connectionContext = None
         self.certificate = certificate
         self.ssl_module = ssl_module
+        self.passphrase = passphrase
 
     def context(self):
         """
@@ -147,7 +159,8 @@ class SSLModuleConnection(APNSConnectionContext):
         self.connectionContext = self.ssl_module.wrap_socket(\
                     self.socket,
                     ssl_version=self.ssl_module.PROTOCOL_SSLv3,
-                    certfile=self.certificate)
+                    certfile=self.certificate,
+                    passphrase=self.passphrase)
 
         return self
 
@@ -196,13 +209,19 @@ class APNSConnection(APNSConnectionContext):
                         ssl_command="openssl",
                         force_ssl_command=False,
                         disable_executable_search=False,
-                        debug=False):
+                        debug=False,
+                        passphrase=None):
         self.connectionContext = None
         self.debug = debug
 
         if not os.path.exists(str(certificate)):
             raise APNSCertificateNotFoundError("Apple Push Notification "\
                 "Service Certificate file %s not found." % str(certificate))
+
+        if passphrase:
+            if not os.path.exists(str(passphrase)):
+                raise APNSPassphraseNotFoundError("Apple Push Notification "\
+                    "Service Passphrase file %s not found." % str(passphrase))
 
         try:
             if force_ssl_command:
@@ -212,7 +231,8 @@ class APNSConnection(APNSConnectionContext):
             # use ssl library to handle secure connection
             import ssl as ssl_module
             self.connectionContext = SSLModuleConnection(certificate, \
-                                        ssl_module=ssl_module)
+                                        ssl_module=ssl_module,
+                                        passphrase=passphrase)
         except:
             # use command line openssl tool to handle secure connection
             if not disable_executable_search:
@@ -225,7 +245,7 @@ class APNSConnection(APNSConnectionContext):
                                 "your PATH environment" % str(ssl_command))
 
             self.connectionContext = OpenSSLCommandLine(certificate, \
-                                                    executable, debug=debug)
+                                                    executable, debug=debug, passphrase=passphrase)
 
         self.certificate = str(certificate)
 
@@ -238,6 +258,10 @@ class APNSConnection(APNSConnectionContext):
 
     def certificate(self, path):
         self.context().certificate(path)
+        return self
+
+    def passphrase(self, path):
+        self.context().passphrase(path)
         return self
 
     def write(self, data=None):

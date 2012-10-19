@@ -87,6 +87,17 @@ class APNSCertificateNotFoundError(Exception):
     def __str__(self):
         return repr(self.value)
 
+class APNSPassphraseNotFoundError(Exception):
+    """
+    This exception raised when you try to add an argument with
+    passphrase file but passphrase not found.
+    """
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
 
 class APNSValueError(Exception):
     """

@@ -42,12 +42,14 @@ class APNSFeedbackWrapper(object):
     _tuplesCount = 0
 
     def __init__(self, certificate=None, sandbox=True, \
-                        force_ssl_command=False, debug_ssl=False):
+                        force_ssl_command=False, debug_ssl=False, \
+                        passphrase=None):
         self.debug_ssl = debug_ssl
         self.force_ssl_command = False
         self.connection = APNSConnection(certificate=certificate, \
                             force_ssl_command=self.force_ssl_command, \
-                            debug=self.debug_ssl)
+                            debug=self.debug_ssl, \
+                            passphrase=passphrase)
 
         self.sandbox = sandbox
         self.feedbacks = []
