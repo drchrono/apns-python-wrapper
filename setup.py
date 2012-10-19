@@ -6,7 +6,7 @@ setup(
     classifiers = ["Intended Audience :: Customer Service", "Topic :: Internet" ],
     # Project uses reStructuredText, so ensure that the docutils get
     # installed or upgraded on the target machine
-    install_requires = ['docutils>=0.3'],
+    install_requires = ['docutils>=0.3',],
 
     package_data = {
         '': ['*.dat'],

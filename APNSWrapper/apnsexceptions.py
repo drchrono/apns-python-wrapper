@@ -14,7 +14,8 @@ __all__ = ('APNSNotImplementedMethod', 'APNSNoSSLContextFound', \
            'APNSNoCommandFound', 'APNSTypeError', 'APNSPayloadLengthError', \
            'APNSCertificateNotFoundError', 'APNSValueError', \
            'APNSUndefinedDeviceToken', 'APNSConnectionError', \
-           'APNSPassphraseNotFoundError')
+           'APNSPassphraseNotFoundError', 'APNSForceOpenSSLError', \
+           'APNSM2CryptoMissingError')
 
 
 class APNSNotImplementedMethod(Exception):
@@ -129,6 +130,28 @@ class APNSConnectionError(Exception):
     This is a simple exception which generated when
     you can't connect to APNS service or your
     certificate is not valid.
+    """
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+class APNSForceOpenSSLError(Exception):
+    """
+    This exception raised when you method of ssl context
+    was not implemented. Only for testing purposes.
+    """
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+class APNSM2CryptoMissingError(Exception):
+    """
+    This exception raised when you method of ssl context
+    was not implemented. Only for testing purposes.
     """
     def __init__(self, value):
         self.value = value

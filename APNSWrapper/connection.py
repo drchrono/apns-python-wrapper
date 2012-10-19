@@ -128,6 +128,85 @@ class OpenSSLCommandLine(APNSConnectionContext):
         pass
 
 
+class M2CryptoModuleConnection(APNSConnectionContext):
+    """
+    This is class which implement APNS connection based on
+    "M2Crypto" module.
+    """
+
+    socket = None
+    certificate = None
+    connectionContext = None
+    ssl_module = None
+    passphrase = None
+
+    def __init__(self, certificate=None, ssl_module=None, passphrase=None):
+        self.socket = None
+        self.connectionContext = None
+        self.certificate = certificate
+        self.ssl_module = ssl_module
+        self.passphrase = passphrase
+
+    def context(self):
+        """
+        Initialize SSL context.
+        """
+        if self.connectionContext != None:
+            return self
+
+        self.socket = socket.socket()
+        ctx = ssl_module.Context('sslv3')
+        if self.passphrase:
+            ctx.load_cert(certchainfile=self.certificate,
+                            callback=self.get_passphrase)
+        else:
+            ctx.load_cert(certfile=self.certificate)
+
+        self.connectionContext = self.ssl_module.Connection(ctx, sock=self.socket)
+
+
+        return self
+
+    def get_passphrase(self):
+        return open(self.passphrase, 'r').readline().strip()
+
+    def certificate(self, path):
+        self.certificate = path
+        return self
+
+    def passphrase(self, path):
+        self.passphrase = path
+        return self
+
+    def read(self, blockSize=1024):
+        """
+        Make connection to the host and port.
+        """
+
+        return self.connectionContext.read(blockSize)
+
+    def write(self, data=None):
+        """
+        Make connection to the host and port.
+        """
+
+        self.connectionContext.write(data)
+
+    def connect(self, host, port):
+        """
+        Make connection to the host and port.
+        """
+
+        self.connectionContext.connect((host, port))
+
+    def close(self):
+        """
+        Close connection.
+        """
+        self.connectionContext.close()
+        self.socket.close()
+
+
 class SSLModuleConnection(APNSConnectionContext):
     """
     This is class which implement APNS connection based on
@@ -231,15 +310,22 @@ class APNSConnection(APNSConnectionContext):
 
         try:
             if force_ssl_command:
-                raise ImportError("There is force_ssl_command "\
+                raise APNSForceOpenSSLError("There is force_ssl_command "\
                                     "forces command line tool")
 
-            # use ssl library to handle secure connection
-            import ssl as ssl_module
-            self.connectionContext = SSLModuleConnection(certificate, \
-                                        ssl_module=ssl_module, \
-                                        passphrase=passphrase)
-        except:
+            import sys
+            if sys.version_info < (3,2): #use M2Crypto if we dont have python 3.2 or newer
+                from M2Crypto import SSl as ssl_module
+                self.connectionContext = M2CryptoModuleConnection(certificate, \
+                                                            ssl_module=ssl_module, \
+                                                            passphrase=passphrase)
+            else:
+                # use ssl library to handle secure connection
+                import ssl as ssl_module
+                self.connectionContext = SSLModuleConnection(certificate, \
+                                            ssl_module=ssl_module, \
+                                            passphrase=passphrase)
+        except APNSForceOpenSSLError:
             # use command line openssl tool to handle secure connection
             if not disable_executable_search:
                 executable = find_executable(ssl_command)
@@ -253,6 +339,10 @@ class APNSConnection(APNSConnectionContext):
             self.connectionContext = OpenSSLCommandLine(certificate, \
                                                     executable, debug=debug, \
                                                     passphrase=passphrase)
+        except ImportError:
+            raise APNSM2CryptoMissingError("You do not have M2Crypto installed."\
+                                            "Either upgrade your python version to 3.2 or "\
+                                            "install M2Crypto")
 
         self.certificate = str(certificate)
         self.passphrase = str(passphrase)
