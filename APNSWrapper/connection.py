@@ -155,18 +155,14 @@ class SSLModuleConnection(APNSConnectionContext):
             return self
 
         self.socket = socket.socket()
-        if self.passphrase:
-            self.connectionContext = self.ssl_module.load_cert_chain(certfile=self.certificate,
-                                                    password=open(passphrase, 'r').readLine().trim()
-                                    ).wrap_socket(\
-                                        self.socket,
-                                        ssl_version=self.ssl_module.PROTOCOL_SSLv3,
-                                        certfile=self.certificate)
-        else:
-            self.connectionContext = self.ssl_module.wrap_socket(\
+        self.connectionContext = self.ssl_module.wrap_socket(\
                         self.socket,
                         ssl_version=self.ssl_module.PROTOCOL_SSLv3,
                         certfile=self.certificate)
+
+        if passphrase:
+            self.connectionContext = self.connectionContext.load_cert_chain(certfile=self.certificate,
+                                                    password=open(passphrase, 'r').readLine().trim())
 
         return self
 
