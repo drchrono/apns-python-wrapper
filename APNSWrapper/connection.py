@@ -168,7 +168,9 @@ class M2CryptoModuleConnection(APNSConnectionContext):
         return self
 
     def get_passphrase(self):
-        return open(self.passphrase, 'r').readline().strip()
+        x = open(self.passphrase, 'r').readline().strip()
+        print x
+        return x
 
     def certificate(self, path):
         self.certificate = path
