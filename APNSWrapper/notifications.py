@@ -211,7 +211,15 @@ class APNSNotificationWrapper(object):
             messages.append(struct.pack('%ds' % plen, p))
 
         message = "".join(messages)
+
+        if self.sandbox != True:
+            apnsHost = self.apnsHost
+        else:
+            apnsHost = self.apnsSandboxHost
+
+        self.connection.connect(apnsHost, self.apnsPort)
         self.connection.write(message)
+        self.connection.close()
 
         return True
 
