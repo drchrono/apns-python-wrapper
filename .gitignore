@@ -1,0 +1,14 @@
+.Python
+.DS_Store
+.svn
+*.pyc
+*.tmproj
+.project
+.pydevproject
+.settings
+\#*
+.\#*
+*~
+*.swp
+*.sublime*
+APNSWrapper.egg-info
