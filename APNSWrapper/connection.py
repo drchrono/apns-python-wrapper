@@ -156,8 +156,10 @@ class M2CryptoModuleConnection(APNSConnectionContext):
         self.socket = socket.socket()
         ctx = self.ssl_module.Context('sslv3')
         if self.passphrase:
+            #ctx.load_cert(self.certificate,
+            #                callback=lambda *args:open(self.passphrase, 'r').readline().strip())
             ctx.load_cert(self.certificate,
-                            callback=lambda:open(self.passphrase, 'r').readline().strip())
+                            callback=lambda:"onpatient")
         else:
             ctx.load_cert(self.certificate)
 
