@@ -159,7 +159,7 @@ class M2CryptoModuleConnection(APNSConnectionContext):
             global_passphrase = open(self.passphrase, 'r').readline().strip() 
 
             ctx.load_cert(self.certificate,
-                            callback=lambda *args:open(passphrase, 'r').readline().strip() )
+                            callback=lambda *args:open(self.passphrase, 'r').readline().strip() )
         else:
             ctx.load_cert(self.certificate)
 
