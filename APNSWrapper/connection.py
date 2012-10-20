@@ -127,6 +127,10 @@ class OpenSSLCommandLine(APNSConnectionContext):
     def close(self):
         pass
 
+def get_passphrase(*args):
+        print "passphrase"
+        return "passphrase"
+
 class M2CryptoModuleConnection(APNSConnectionContext):
     """
     This is class which implement APNS connection based on
@@ -159,7 +163,7 @@ class M2CryptoModuleConnection(APNSConnectionContext):
             #ctx.load_cert(self.certificate,
             #                callback=lambda *args:open(self.passphrase, 'r').readline().strip())
             ctx.load_cert(self.certificate,
-                            callback=self.get_passphrase)
+                            callback=get_passphrase)
         else:
             ctx.load_cert(self.certificate)
 
@@ -170,10 +174,6 @@ class M2CryptoModuleConnection(APNSConnectionContext):
     def certificate(self, path):
         self.certificate = path
         return self
-
-    def get_passphrase(self):
-        print "passphrase"
-        return "passphrase"
 
     def passphrase(self, path):
         self.passphrase = path
