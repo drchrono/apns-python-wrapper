@@ -128,8 +128,9 @@ class OpenSSLCommandLine(APNSConnectionContext):
         pass
 
 global_passphrase = None
-def get_passphrase(*args):
+def get_passphrase(*args, **kwargs):
     print args
+    print kwargs
     global global_passphrase
     return open(global_passphrase, 'r').readline().strip() 
 
