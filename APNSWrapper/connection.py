@@ -166,7 +166,7 @@ class M2CryptoModuleConnection(APNSConnectionContext):
         ctx = self.ssl_module.Context('sslv3')
         if self.passphrase:
             ctx.load_cert(self.certificate,
-                            callback=get_passphrase)
+                            callback=lambda *args:"testpw")
         else:
             ctx.load_cert(self.certificate)
 
