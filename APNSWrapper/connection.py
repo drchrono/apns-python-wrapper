@@ -12,6 +12,7 @@
 
 import os
 import socket
+from socket import SHUT_RDWR
 import subprocess
 
 from apnsexceptions import *
@@ -35,12 +36,24 @@ class APNSConnectionContext(object):
         raise APNSNotImplementedMethod("APNSConnectionContext.connect ssl "\
                                         "method not implemented in context")
 
-    def write(data=None):
+    def fileno(self):
+        raise APNSNotImplementedMethod("APNSConnectionContext.fileno "\
+                                        "method not implemented")
+
+    def write(self, data=None):
         raise APNSNotImplementedMethod("APNSConnectionContext.write "\
                                         "method not implemented")
 
+    def pending(self):
+        raise APNSNotImplementedMethod("APNSConnectionContext.pending method "\
+                                        "not implemented")
+
     def read(self):
         raise APNSNotImplementedMethod("APNSConnectionContext.read method "\
+                                        "not implemented")
+
+    def shutdown(self):
+        raise APNSNotImplementedMethod("APNSConnectionContext.shutdown method "\
                                         "not implemented")
 
     def close(self):
@@ -96,7 +109,7 @@ class OpenSSLCommandLine(APNSConnectionContext):
         pipe = self._command()
 
         std_in = pipe.stdin
-        std_in.write(data)
+        n_written = std_in.write(data)
         std_in.flush()
         std_in.close()
 
@@ -108,6 +121,10 @@ class OpenSSLCommandLine(APNSConnectionContext):
             print std_out.read()
             std_out.close()
         pipe.wait()
+        return n_written
+
+    def pending(self):
+        return 0
 
     def read(self, blockSize=1024):
         """
@@ -126,6 +143,9 @@ class OpenSSLCommandLine(APNSConnectionContext):
     def context(self):
         return self
 
+    def shutdown(self, how=SHUT_RDWR):
+        pass
+
     def close(self):
         pass
 
@@ -140,6 +160,7 @@ class M2CryptoModuleConnection(APNSConnectionContext):
     connectionContext = None
     ssl_module = None
     passphrase = None
+    connected = False
 
     def __init__(self, certificate=None, ssl_module=None, passphrase=None):
         self.socket = None
@@ -155,15 +176,16 @@ class M2CryptoModuleConnection(APNSConnectionContext):
         if self.connectionContext != None:
             return self
 
-        self.socket = socket.socket()
-        ctx = self.ssl_module.Context('sslv3')
-        if self.passphrase:
-            ctx.load_cert(self.certificate,
-                            callback=lambda *args:open(self.passphrase, 'r').readline().strip())
-        else:
-            ctx.load_cert(self.certificate)
-
-        self.connectionContext = self.ssl_module.Connection(ctx, sock=self.socket)
+        try:
+            self.socket = socket.socket()
+            ctx = self.ssl_module.Context('sslv3')
+            if self.passphrase:
+                ctx.load_cert(self.certificate, callback=lambda *args:open(self.passphrase, 'r').readline().strip())
+            else:
+                ctx.load_cert(self.certificate)
+            self.connectionContext = self.ssl_module.Connection(ctx, sock=self.socket)
+        except SSLError as e:
+            raise APNSSSLError(m2_error=e)
 
         return self
 
@@ -175,33 +197,75 @@ class M2CryptoModuleConnection(APNSConnectionContext):
         self.passphrase = path
         return self
 
+    def fileno(self):
+        """
+        Return the file descriptor for the underlying socket.
+        """
+        return self.socket.fileno()
+
+    def pending(self):
+        """
+        Find out how many octets are waiting to be read from
+        the connection.
+        """
+        try:
+            return self.connectionContext.pending()
+        except SSLError as e:
+            raise APNSSSLError(m2_error=e)
+
     def read(self, blockSize=1024):
         """
-        Make connection to the host and port.
+        Read data from the socket.
         """
-
-        return self.connectionContext.read(blockSize)
+        try:
+            return self.connectionContext.read(blockSize)
+        except SSLError as e:
+            raise APNSSSLError(m2_error=e)
 
     def write(self, data=None):
         """
-        Make connection to the host and port.
+        Write data to the socket.
         """
-
-        self.connectionContext.write(data)
+        try:
+            return self.connectionContext.write(data)
+        except SSLError as e:
+            raise APNSSSLError(m2_error=e)
 
     def connect(self, host, port):
         """
         Make connection to the host and port.
         """
 
-        self.connectionContext.connect((host, port))
+        try:
+            rc  = self.connectionContext.connect((host, port))
+        except SSLError as e:
+            self.connected = False
+            raise APNSSSLError(m2_error=e)
+
+        if rc == 0:
+            self.connected = True
+        else:
+            self.conected = False
+        return self.connected
+
+    def shutdown(self, how=SHUT_RDWR):
+        """
+        Shutdown the socket.
+        """
+        try:
+            self.socket.shutdown(how)
+        except SSLError as e:
+            raise APNSSSLError(m2_error=e)
 
     def close(self):
         """
         Close connection.
         """
-        self.connectionContext.close()
-        self.socket.close()
+        try:
+            self.connectionContext.close()
+            self.socket.close()
+        except SSLError as e:
+            raise APNSSSLError(m2_error=e)
 
 
 class SSLModuleConnection(APNSConnectionContext):
@@ -215,6 +279,7 @@ class SSLModuleConnection(APNSConnectionContext):
     connectionContext = None
     ssl_module = None
     passphrase = None
+    connected = False
 
     def __init__(self, certificate=None, ssl_module=None, passphrase=None):
         self.socket = None
@@ -250,6 +315,20 @@ class SSLModuleConnection(APNSConnectionContext):
         self.passphrase = path
         return self
 
+    def fileno(self):
+        """
+        Return the file descriptor for the underlying socket.
+        """
+        return self.socket.fileno()
+
+    def pending(self):
+        """
+        Find out how many octets are waiting to be read from
+        the connection.
+        """
+
+        return self.connectionContext.pending()
+
     def read(self, blockSize=1024):
         """
         Make connection to the host and port.
@@ -262,14 +341,24 @@ class SSLModuleConnection(APNSConnectionContext):
         Make connection to the host and port.
         """
         print self.connectionContext
-        self.connectionContext.write(data)
+        return self.connectionContext.write(data)
 
     def connect(self, host, port):
         """
         Make connection to the host and port.
         """
 
-        self.connectionContext.connect((host, port))
+        try:
+            self.connected = self.connectionContext.connect_ex((host, port))
+        except:
+            self.conected = False
+        return self.connected
+
+    def shutdown(self, how=SHUT_RDWR):
+        """
+        Shutdown the socket.
+        """
+        self.socket.shutdown(how)
 
     def close(self):
         """
@@ -277,6 +366,7 @@ class SSLModuleConnection(APNSConnectionContext):
         """
         self.connectionContext.close()
         self.socket.close()
+        self.connected = False
 
 
 class APNSConnection(APNSConnectionContext):
@@ -359,8 +449,14 @@ class APNSConnection(APNSConnectionContext):
         self.context().passphrase(path)
         return self
 
+    def fileno(self):
+        return self.context().fileno()
+
     def write(self, data=None):
-        self.context().write(data)
+        return self.context().write(data)
+
+    def pending(self):
+        return self.context().pending()
 
     def read(self, blockSize=1024):
         return self.context().read(blockSize)
@@ -370,6 +466,9 @@ class APNSConnection(APNSConnectionContext):
             raise APNSNoSSLContextFound("There is no SSL context available "\
                                             "in your python environment.")
         return self.connectionContext.context()
+
+    def shutdown(self):
+        self.context().shutdown()
 
     def close(self):
         """
