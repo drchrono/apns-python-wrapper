@@ -162,13 +162,12 @@ class APNSNotificationWrapper(object):
     timeout = 60
     read_buf = []
 
-    def __init__(self, certificate=None, sandbox=True, debug_ssl=False, \
-                    force_ssl_command=False, passphrase=None):
+    def __init__(self, certificate=None, sandbox=True, debug_ssl=False, force_ssl_command=False, passphrase=None):
         self.debug_ssl = debug_ssl
-        self.connection = APNSConnection(certificate=certificate, \
-                            force_ssl_command=force_ssl_command, \
-                            debug=self.debug_ssl, \
-                            passphrase=passphrase)
+        self.connection = APNSConnection(certificate=certificate,
+                                         force_ssl_command=force_ssl_command,
+                                         debug=self.debug_ssl,
+                                         passphrase=passphrase)
         self.sandbox = sandbox
         self.payloads = []
 
@@ -211,8 +210,6 @@ class APNSNotificationWrapper(object):
     def notify(self):
         """
         Send nofification to APNS:
-            1) prepare all internal variables to APNS Payout JSON
-            2) send notification
         """
         sent_notifications = []
         payloads = [o.payload(wrapper_id=self.next_wrapper_id()) for o in self.payloads]
@@ -221,16 +218,16 @@ class APNSNotificationWrapper(object):
         if len(payloads) == 0:
             return sent_notifications
 
-        if self.sandbox != True:
+        if not self.sandbox:
             apnsHost = self.apnsHost
         else:
             apnsHost = self.apnsSandboxHost
 
         error_detected = False
         if self.connection.connect(apnsHost, self.apnsPort):
-            rfds = [self.connection.fileno()]
-            wfds = [self.connection.fileno()]
-            efds = [self.connection.fileno()]
+            rfds = [self.connection.stdin()]
+            wfds = [self.connection.stdout()]
+            efds = [self.connection.stdin(), self.connection.stdout()]
 
             payloads.reverse()
             done = False
@@ -240,14 +237,12 @@ class APNSNotificationWrapper(object):
 
                 # Handle errors
                 if len(in_error):
-                    print "Error"
-                    pass
+                    break
                 
                 # Read from APNS
                 if len(ready_to_read):
                     n_read = self.read()
                     if len(self.read_buf) and len(self.read_buf[0]) >= 6:
-                        print "Dropping out"
                         error_detected = True
                         break
 
@@ -263,19 +258,18 @@ class APNSNotificationWrapper(object):
                     else:
                         done = True
 
-            ready_to_read, ready_to_write, in_error = select(rfds, [], [], 15)
+            ready_to_read, ready_to_write, in_error = select(rfds, [], [], 1)
             if len(ready_to_read):
                 n_read = self.read()
                 error_detected = True
 
         if error_detected:
-            print "self.read_buf=", self.read_buf
             cmd, status, identifier = struct.unpack("!BBL", self.read_buf[0])
+            print "Error detected on notification: %d" % (identifier)
             for i, (wrapper_id, global_id) in enumerate(sent_notifications):
                 if wrapper_id == identifier:
                     sent_notifications = sent_notifications[:i]
                     break
-            print "identifier=%d" % (identifier)
             print sent_notifications
 
         try:
