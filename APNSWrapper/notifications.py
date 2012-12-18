@@ -18,6 +18,7 @@ from __init__ import *
 from connection import *
 from apnsexceptions import *
 from utils import _doublequote
+from select import select
 
 NULL = 'null'
 
@@ -157,14 +158,16 @@ class APNSNotificationWrapper(object):
     payloads = None
     connection = None
     debug_ssl = False
+    current_wrapper_id = 0
+    timeout = 60
+    read_buf = []
 
-    def __init__(self, certificate=None, sandbox=True, debug_ssl=False, \
-                    force_ssl_command=False, passphrase=None):
+    def __init__(self, certificate=None, sandbox=True, debug_ssl=False, force_ssl_command=False, passphrase=None):
         self.debug_ssl = debug_ssl
-        self.connection = APNSConnection(certificate=certificate, \
-                            force_ssl_command=force_ssl_command, \
-                            debug=self.debug_ssl, \
-                            passphrase=passphrase)
+        self.connection = APNSConnection(certificate=certificate,
+                                         force_ssl_command=force_ssl_command,
+                                         debug=self.debug_ssl,
+                                         passphrase=passphrase)
         self.sandbox = sandbox
         self.payloads = []
 
@@ -190,38 +193,91 @@ class APNSNotificationWrapper(object):
 
         self.connection.connect(apnsHost, self.apnsPort)
 
-    def discounnect(self):
+    def read(self, blockSize=1024):
+        buf = self.connection.read(blockSize=blockSize)
+        self.read_buf.append(buf)
+        return len(buf)
+
+    def disconnect(self):
         """Close connection ton APNS server"""
+        self.connection.shutdown()
         self.connection.close()
+
+    def next_wrapper_id(self):
+        self.current_wrapper_id += 1
+        return self.current_wrapper_id
 
     def notify(self):
         """
         Send nofification to APNS:
-            1) prepare all internal variables to APNS Payout JSON
-            2) send notification
         """
-        payloads = [o.payload() for o in self.payloads]
+        sent_notifications = []
+        payloads = [o.payload(wrapper_id=self.next_wrapper_id()) for o in self.payloads]
         messages = []
 
         if len(payloads) == 0:
-            return False
+            return sent_notifications
 
-        for p in payloads:
-            plen = len(p)
-            messages.append(struct.pack('%ds' % plen, p))
-
-        message = "".join(messages)
-
-        if self.sandbox != True:
+        if not self.sandbox:
             apnsHost = self.apnsHost
         else:
             apnsHost = self.apnsSandboxHost
 
-        self.connection.connect(apnsHost, self.apnsPort)
-        self.connection.write(message)
-        self.connection.close()
+        error_detected = False
+        if self.connection.connect(apnsHost, self.apnsPort):
+            rfds = [self.connection.stdin()]
+            wfds = [self.connection.stdout()]
+            efds = [self.connection.stdin(), self.connection.stdout()]
 
-        return True
+            payloads.reverse()
+            done = False
+            current_payload = payloads.pop()
+            while not done:
+                ready_to_read, ready_to_write, in_error = select(rfds, wfds, efds, self.timeout)
+
+                # Handle errors
+                if len(in_error):
+                    break
+                
+                # Read from APNS
+                if len(ready_to_read):
+                    n_read = self.read()
+                    if len(self.read_buf) and len(self.read_buf[0]) >= 6:
+                        error_detected = True
+                        break
+
+                # Write to APNS
+                if len(ready_to_write):
+                    w_fd = ready_to_write[0]
+                    current_payload.write(self.connection)
+
+                if current_payload.sent:
+                    sent_notifications.append((current_payload.wrapper_id, current_payload.global_id))
+                    if len(payloads):
+                        current_payload = payloads.pop()
+                    else:
+                        done = True
+
+            ready_to_read, ready_to_write, in_error = select(rfds, [], [], 1)
+            if len(ready_to_read):
+                n_read = self.read()
+                error_detected = True
+
+        if error_detected:
+            cmd, status, identifier = struct.unpack("!BBL", self.read_buf[0])
+            print "Error detected on notification: %d" % (identifier)
+            for i, (wrapper_id, global_id) in enumerate(sent_notifications):
+                if wrapper_id == identifier:
+                    sent_notifications = sent_notifications[:i]
+                    break
+            print sent_notifications
+
+        try:
+            self.disconnect()
+        except:
+            pass
+
+        return [l[1] for l in sent_notifications]
 
 
 class APNSNotification(object):
@@ -230,10 +286,18 @@ class APNSNotification(object):
     python object.
     """
 
-    command = 0
+    global_id = 0        # Assigned by the caller
+    wrapper_id = 0       # Assigned by the library
+
+    command = 1
+    identifier = 0 
+    expiry = 0
     badge = None
     sound = None
     alert = None
+    n_written = 0
+    msg_len = 0
+    sent = False
 
     deviceToken = None
 
@@ -242,15 +306,25 @@ class APNSNotification(object):
 
     properties = None
 
-    def __init__(self):
+    def __init__(self, use_enhanced_format=True, global_id=0):
         """
         Initialization of the APNSNotificationWrapper object.
+        
+        use_enhanded_format -- If true, then use the enhanced
+          APNS message format.  Otherwise, use the original APNS
+          message format.
+        global_id -- Unique identifier within the caller's context.
         """
+        self.command = int(use_enhanced_format)
         self.properties = []
         self.badgeValue = None
         self.soundValue = None
         self.alertObject = None
         self.deviceToken = None
+        self.global_id = global_id
+        self.n_written = 0
+        self.msg_len = 0
+        self.sent = False
 
     def token(self, token):
         """
@@ -374,7 +448,18 @@ class APNSNotification(object):
 
         return payload
 
-    def payload(self):
+    def write(self, connection=None):
+        if connection == None:
+            raise Exception
+
+        n = connection.write(self.packedPayload[self.n_written:])
+        if n > 0:
+            self.n_written += n
+            if self.n_written == self.msg_len:
+                self.sent = True
+        return n
+
+    def payload(self, wrapper_id=0):
         """Build payload via struct module"""
         if self.deviceToken == None:
             raise APNSUndefinedDeviceToken("You forget to set deviceToken "\
@@ -383,17 +468,30 @@ class APNSNotification(object):
         payload = self.build()
         payloadLength = len(payload)
         tokenLength = len(self.deviceToken)
-        # Below not used at the moment
-        # tokenFormat = "s" * tokenLength
-        # payloadFormat = "s" * payloadLength
+        self.wrapper_id = wrapper_id
+        self.identifier = self.wrapper_id
 
-        apnsPackFormat = "!BH" + str(tokenLength) + "sH" + \
-                                            str(payloadLength) + "s"
-
-        # build notification message in binary format
-        return struct.pack(apnsPackFormat,
-                                    self.command,
-                                    tokenLength,
-                                    self.deviceToken,
-                                    payloadLength,
-                                    payload)
+        if self.command == 0:
+            apnsPackFormat = "!BH" + str(tokenLength) + "sH" + str(payloadLength) + "s"
+            self.packedPayload = struct.pack(apnsPackFormat,
+                                             self.command,
+                                             tokenLength,
+                                             self.deviceToken,
+                                             payloadLength,
+                                             payload)
+            self.msg_len = len(self.packedPayload)
+        elif self.command == 1:
+            apnsPackFormat = "!BLLH" + str(tokenLength) + "sH" +  str(payloadLength) + "s"
+            self.packedPayload = struct.pack(apnsPackFormat,
+                                             self.command,
+                                             self.identifier,
+                                             self.expiry,
+                                             tokenLength,
+                                             self.deviceToken,
+                                             payloadLength,
+                                             payload)
+            self.msg_len = len(self.packedPayload)
+        else:
+            # TODO: Raise an appropriate exception
+            raise Exception
+        return self

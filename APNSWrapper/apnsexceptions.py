@@ -158,3 +158,21 @@ class APNSM2CryptoMissingError(Exception):
 
     def __str__(self):
         return repr(self.value)
+
+
+class APNSSSLError(Exception):
+    """
+    This exception is raised on an SSL exceptions raised
+    from the underlying libraries.
+    """
+    def __init__(self, errno=-1, strerror='Unknown Error', m2_error=None):
+        if m2_error != None:
+            from M2Crypto import m2
+            self.errno = m2_error.client_addr.encode('utf8')
+            self.strerror = m2_error.err_reason_error_string(m2_error.err)
+        else:
+            self.errno = errno
+            self.strerror = strerror
+
+    def __str__(self):
+        return "%d: %s" % (self.errno, self.strerror)
