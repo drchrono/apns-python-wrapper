@@ -17,6 +17,7 @@ import subprocess
 
 from apnsexceptions import *
 from utils import *
+from ssl import SSLError
 
 
 __all__ = ('APNSConnectionContext', 'OpenSSLCommandLine', \
