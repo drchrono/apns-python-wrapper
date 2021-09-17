@@ -373,7 +373,7 @@ class SSLModuleConnection(APNSConnectionContext):
         """
         Make connection to the host and port.
         """
-        print self.connectionContext
+        print(self.connectionContext)
         return self.connectionContext.write(data)
 
     def connect(self, host, port):
