@@ -15,8 +15,8 @@ import socket
 from socket import SHUT_RDWR
 import subprocess
 
-from apnsexceptions import *
-from utils import *
+from .apnsexceptions import *
+from .utils import *
 
 
 __all__ = ('APNSConnectionContext', 'OpenSSLCommandLine', \

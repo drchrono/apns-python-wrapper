@@ -14,10 +14,10 @@ import struct
 import base64
 import binascii
 
-from __init__ import *
-from connection import *
-from apnsexceptions import *
-from utils import _doublequote
+from .__init__ import *
+from .connection import *
+from .apnsexceptions import *
+from .utils import _doublequote
 from select import select
 
 NULL = 'null'

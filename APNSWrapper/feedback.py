@@ -13,7 +13,7 @@ import datetime
 import sys
 import struct
 
-from connection import *
+from .connection import *
 
 
 __all__ = ('APNSFeedbackWrapper',)
