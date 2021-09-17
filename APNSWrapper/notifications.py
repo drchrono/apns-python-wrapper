@@ -265,12 +265,12 @@ class APNSNotificationWrapper(object):
 
         if error_detected:
             cmd, status, identifier = struct.unpack("!BBL", self.read_buf[0])
-            print "Error detected on notification: %d" % (identifier)
+            print("Error detected on notification: %d" % (identifier))
             for i, (wrapper_id, global_id) in enumerate(sent_notifications):
                 if wrapper_id == identifier:
                     sent_notifications = sent_notifications[:i]
                     break
-            print sent_notifications
+            print(sent_notifications)
 
         try:
             self.disconnect()
